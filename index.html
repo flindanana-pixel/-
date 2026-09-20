@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>职业路线匹配测试</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2canvas CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            color: #0f172a;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(199, 210, 254, 0.5);
+        }
+
+        .option-card {
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
+        }
+
+        .option-card:active {
+            transform: scale(0.985);
+        }
+
+        .progress-bar-fill {
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, #6366f1 0%, #3b82f6 100%);
+        }
+
+        .chart-bar-fill {
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            background: linear-gradient(90deg, #4f46e5 0%, #2563eb 100%);
+        }
+
+        .toast {
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 sm:p-4">
+
+    <div class="w-full max-w-md mx-auto h-[95vh] max-h-[880px] bg-white/95 glass-panel shadow-2xl rounded-3xl overflow-hidden flex flex-col relative border border-indigo-100">
+
+        <header class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 px-5 py-4 text-white flex items-center justify-between shrink-0 z-20 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-500/30 border border-indigo-300/40 flex items-center justify-center text-indigo-200 shadow-inner">
+                    <i class="fa-solid fa-compass text-base"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-white text-sm tracking-tight leading-tight">职业路线匹配测试</h1>
+                    <p class="text-[10px] text-indigo-200 font-medium">思维倾向与适合赛道分析</p>
+                </div>
+            </div>
+            <span id="header-badge" class="text-[11px] px-3 py-1 bg-indigo-700/60 text-indigo-100 font-bold rounded-full border border-indigo-400/30">
+                50题完整版
+            </span>
+        </header>
+
+        <div id="screen-intro" class="flex-1 overflow-y-auto p-5 space-y-4 flex flex-col">
+            <div class="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 shadow-sm space-y-1.5 shrink-0">
+                <div class="flex items-center gap-2 text-indigo-700 font-bold text-xs uppercase tracking-wider">
+                    <i class="fa-solid fa-circle-info text-indigo-600"></i>
+                    <span>测评说明</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    本测试包含 <span class="text-indigo-700 font-bold">50 道倾向选择题</span>，覆盖 10 个能力偏好维度。请凭第一直觉作答，点击选项将<span class="text-indigo-600 font-bold">自动平滑跳转</span>。
+                </p>
+            </div>
+
+            <!-- 10 Dimension List -->
+            <div class="space-y-2 flex-1">
+                <div class="text-xs font-bold text-slate-800 px-1 flex items-center justify-between">
+                    <span>覆盖的 10 个能力偏好维度</span>
+                    <span class="text-[10px] text-indigo-600 font-bold">多维匹配</span>
+                </div>
+                <div id="dimension-list" class="grid grid-cols-2 gap-2">
+                    <!-- Dynamic rendering -->
+                </div>
+            </div>
+
+            <div class="pt-2 shrink-0">
+                <button onclick="startTest()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <span>开始测试</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-quiz" class="hidden flex-1 flex flex-col p-5 overflow-hidden">
+            <!-- Progress Bar -->
+            <div class="space-y-1.5 mb-4 shrink-0">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <span id="quiz-progress-text" class="text-slate-700">第 1 / 50 题</span>
+                    <span id="quiz-progress-percent" class="text-indigo-600 font-bold">2%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/80">
+                    <div id="quiz-progress-bar" class="progress-bar-fill h-full w-[2%] rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="mb-4 flex-1 flex items-center bg-gradient-to-br from-indigo-50/60 to-slate-50/80 rounded-2xl p-4 border border-indigo-100/80 shadow-sm">
+                <h2 id="question-title" class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                    加载中...
+                </h2>
+            </div>
+
+            <!-- Option Cards -->
+            <div id="options-container" class="space-y-2.5 mb-4 shrink-0">
+                <!-- Dynamic generation -->
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-200/80 shrink-0 mt-auto">
+                <button id="btn-prev" onclick="prevQuestion()" class="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i> 上一题
+                </button>
+                <span class="text-[11px] text-slate-400 font-medium">键盘数字 1-4 可快捷选择</span>
+            </div>
+        </div>
+
+        <div id="screen-result" class="hidden flex-1 overflow-y-auto p-5 space-y-4">
+            <div class="text-center space-y-1">
+                <span class="text-[10px] uppercase tracking-wider text-brand-700 font-bold bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200">测评结果分析</span>
+                <h2 class="text-base sm:text-lg font-black text-slate-900">你的职业倾向与匹配分析报告</h2>
+            </div>
+
+            <!-- Card 1: 10 Dimension Radar Chart -->
+            <div class="glass-panel rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                    <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-brand-600"></i>
+                        维度能力雷达图
+                    </h3>
+                    <span class="text-[11px] text-slate-500 font-medium">10维综合分析</span>
+                </div>
+                <!-- Radar Chart Canvas Container -->
+                <div class="relative w-full aspect-square max-w-[280px] mx-auto py-1">
+                    <canvas id="radarChartCanvas"></canvas>
+                </div>
+                <div id="result-chart-container" class="space-y-2 mt-3 pt-3 border-t border-slate-100">
+                    <!-- Dynamic rendering -->
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="font-bold text-slate-900 text-xs sm:text-sm px-1 flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-brand-600"></i>
+                    匹配职业方向
+                </h3>
+
+                <div id="top-track-card" class="bg-white rounded-2xl p-4 shadow-md border border-brand-500/30 relative overflow-hidden space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold tracking-wider text-brand-700 uppercase bg-brand-50 px-2 py-0.5 rounded border border-brand-200">最佳匹配</span>
+                            <h4 id="top-track-title" class="text-base sm:text-lg font-black text-slate-900 mt-1">加载中...</h4>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span id="top-track-match" class="text-2xl font-black text-brand-600">95%</span>
+                            <div class="text-[10px] text-slate-500 font-semibold">契合度</div>
+                        </div>
+                    </div>
+
+                    <div id="top-track-tags" class="flex flex-wrap gap-1.5"></div>
+
+                    <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 leading-relaxed border border-slate-200/80" id="top-track-desc"></div>
+
+                    <div>
+                        <div class="text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                            <span>🎯</span> 常见典型岗位/角色:
+                        </div>
+                        <div id="top-track-jobs" class="flex flex-wrap gap-1.5"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <div class="text-xs font-bold text-slate-700 px-1">其他高度契合方向</div>
+                    <div id="secondary-tracks-container" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 pb-4 space-y-2 shrink-0">
+                <button onclick="generatePoster()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-amber-500/20">
+                    <i class="fa-solid fa-image"></i>
+                    <span>生成结果海报卡片</span>
+                </button>
+                <button onclick="shareResult()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-brand-600/20">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>复制结果摘要</span>
+                </button>
+                <button onclick="resetQuiz()" class="w-full py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>重新测试</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="poster-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl relative space-y-4 text-center my-auto">
+                <button onclick="closePosterModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 class="font-extrabold text-slate-900 text-base">您的专属职业匹配海报</h3>
+                
+                <!-- Printable Poster Content Box -->
+                <div id="poster-printable-area" class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-2xl border border-indigo-500/30 shadow-inner text-left space-y-3">
+                    <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-500/30 flex items-center justify-center text-indigo-300 text-xs">
+                                <i class="fa-solid fa-compass"></i>
+                            </div>
+                            <span class="text-xs font-black tracking-wider text-indigo-100">职业路线匹配评估报告</span>
+                        </div>
+                        <span class="text-[9px] px-2 py-0.5 rounded-full bg-indigo-800/80 text-indigo-200 font-bold">50题深度测评</span>
+                    </div>
+
+                    <div class="space-y-0.5">
+                        <div class="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider">最佳首选赛道</div>
+                        <div id="poster-track-title" class="text-lg font-black text-amber-300">加载中...</div>
+                        <div id="poster-track-match" class="text-xs text-indigo-200 font-bold">契合度 95%</div>
+                    </div>
+
+                    <!-- Mini Radar in Poster -->
+                    <div class="w-full aspect-square max-w-[210px] mx-auto py-1">
+                        <canvas id="posterRadarCanvas"></canvas>
+                    </div>
+
+                    <div class="bg-indigo-900/40 rounded-xl p-2.5 border border-indigo-700/40 space-y-1">
+                        <div class="text-[10px] font-bold text-indigo-200 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-nodes text-amber-400"></i> 典型角色岗位
+                        </div>
+                        <div id="poster-jobs" class="flex flex-wrap gap-1"></div>
+                    </div>
+
+                    <div class="pt-2 border-t border-indigo-800/60 flex items-center justify-between text-[10px] text-indigo-300">
+                        <span>职业画像与思维基因报告</span>
+                        <span class="font-mono text-amber-400">#职业路线测试</span>
+                    </div>
+                </div>
+
+                <!-- Poster Action Buttons -->
+                <div class="space-y-1.5 pt-1">
+                    <button onclick="downloadPosterImage()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-[0.98]">
+                        <i class="fa-solid fa-download mr-1"></i> 下载保存海报图片
+                    </button>
+                    <p class="text-[10px] text-slate-400">生成的图片会自动保存至您的手机/电脑本地</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast-message" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl z-50 flex items-center gap-2 pointer-events-none">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-text">复制成功！</span>
+        </div>
+
+    </div>
+
+    <script>
+        // 10 Dimensions Definitions
+        const DIMENSIONS = [
+            { id: 'innovation', name: '创新开拓', icon: 'fa-lightbulb', color: 'text-amber-500 bg-amber-50 border-amber-200' },
+            { id: 'logic', name: '逻辑分析', icon: 'fa-brain', color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+            { id: 'communication', name: '沟通协作', icon: 'fa-comments', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+            { id: 'autonomy', name: '自由灵活', icon: 'fa-feather', color: 'text-sky-600 bg-sky-50 border-sky-200' },
+            { id: 'leadership', name: '团队管理', icon: 'fa-crown', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+            { id: 'business', name: '商业敏锐', icon: 'fa-chart-line', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+            { id: 'stability', name: '稳健风控', icon: 'fa-shield-halved', color: 'text-slate-600 bg-slate-100 border-slate-200' },
+            { id: 'creativity', name: '艺术审美', icon: 'fa-palette', color: 'text-pink-600 bg-pink-50 border-pink-200' },
+            { id: 'impact', name: '社会价值', icon: 'fa-heart', color: 'text-rose-600 bg-rose-50 border-rose-200' },
+            { id: 'technical', name: '专精实操', icon: 'fa-screwdriver-wrench', color: 'text-cyan-600 bg-cyan-50 border-cyan-200' }
+        ];
+
+        // Career Tracks Database
+        const CAREER_TRACKS = [
+            {
+                id: 'ai_product',
+                name: 'AI 与前沿科技产品',
+                tags: ['前沿探索', '系统逻辑', '技术理解'],
+                weights: { innovation: 95, logic: 90, technical: 85, business: 80, autonomy: 75 },
+                desc: '对前沿技术高度敏锐，善于理解新技术并将抽象的技术能力转化为解决实际问题的产品方案。',
+                jobs: ['AI 产品经理', '科技前沿咨询', '系统架构师', '创新业务负责人']
+            },
+            {
+                id: 'digital_nomad',
+                name: '独立创作者 & 自由职业',
+                tags: ['高度自主', '内容表达', '自我驱动'],
+                weights: { autonomy: 100, creativity: 95, innovation: 85, impact: 80, business: 70 },
+                desc: '追求个人时间与地点的自主掌控，擅长将个人专业技能、创意或知识转化为独立的产出与价值。',
+                jobs: ['独立开发者', '垂直自媒体人', '自由设计师', '独立顾问']
+            },
+            {
+                id: 'strategy_consultant',
+                name: '商业战略与数据分析',
+                tags: ['商业判断', '逻辑推演', '数据决策'],
+                weights: { business: 95, logic: 95, communication: 80, leadership: 75, stability: 50 },
+                desc: '善于看清复杂商业现象背后的底层规律，依靠严密的数据分析与逻辑推导，为重大决策提供依据。',
+                jobs: ['商业分析师 (BI)', '战略咨询顾问', '市场投资分析', '增长分析专家']
+            },
+            {
+                id: 'org_leader',
+                name: '团队领导与运营管理',
+                tags: ['团队凝聚', '高效沟通', '资源统筹'],
+                weights: { leadership: 95, communication: 90, stability: 75, business: 80, logic: 70 },
+                desc: '擅长凝聚多方力量，明确分工与目标，统筹协调各类资源，带领团队有条不紊地高效达成既定目标。',
+                jobs: ['项目经理 (PMP)', '运营总监', '组织发展 (OD)', '团队负责人']
+            },
+            {
+                id: 'fintech_risk',
+                name: '金融风控与严密审计',
+                tags: ['稳健严谨', '风险把控', '规则意识'],
+                weights: { stability: 95, logic: 90, technical: 80, business: 75, innovation: 40 },
+                desc: '重视秩序与确定性，逻辑严密且工作极其细致，擅长发现隐患并建立安全合规的防护体系。',
+                jobs: ['风控分析师', '内部审计师', '精算师', '合规把关专员']
+            },
+            {
+                id: 'ux_design',
+                name: '用户体验与视觉设计',
+                tags: ['审美感知', '用户共情', '视觉表达'],
+                weights: { creativity: 95, technical: 85, autonomy: 80, communication: 70, logic: 65 },
+                desc: '具备出色的视觉审美与共情能力，能够将抽象的用户需求转化为直观、优雅且易用的产品体验。',
+                jobs: ['UI/UX 设计师', '视觉设计师', '动效/三维设计师', '产品造型设计']
+            },
+            {
+                id: 'ed_community',
+                name: '教育培训与社群成长',
+                tags: ['利他向善', '深度沟通', '陪伴成长'],
+                weights: { impact: 95, communication: 90, leadership: 75, stability: 70, creativity: 65 },
+                desc: '能从帮助他人成长中获得强烈的成就感，擅长倾听、引导与分享，适合从事教育、教练与社群方向。',
+                jobs: ['职业成长教练', '社群运营专家', '培训讲师', '心理辅导师']
+            },
+            {
+                id: 'tech_architect',
+                name: '核心技术研发与架构',
+                tags: ['技术深耕', '系统思考', '专精解决'],
+                weights: { technical: 95, logic: 95, autonomy: 75, stability: 65, communication: 50 },
+                desc: '喜欢用扎实的专业技术攻克复杂难题，注重系统的稳定性与可扩展性，适合走专业技术专家路线。',
+                jobs: ['资深研发工程师', '系统架构师', '算法工程师', '网络安全专家']
+            }
+        ];
+
+        // 50 Questions Database
+        const QUESTIONS = [
+            { title: '1. 接下一个全新的课题或任务时，你的第一反应是：', options: [
+                { text: '寻找前所未有的新点子与突破口', dim: 'innovation' },
+                { text: '理清底层逻辑与整体推导脉络', dim: 'logic' },
+                { text: '找有经验的同伴探讨沟通与分工', dim: 'communication' },
+                { text: '动手拆解具体步骤，直接开始实操', dim: 'technical' }
+            ]},
+            { title: '2. 怎样的工作或学习状态最符合你的理想期望？', options: [
+                { text: '时间高度自主，不受过多规则约束', dim: 'autonomy' },
+                { text: '流程清晰明确，有稳定可靠的保障', dim: 'stability' },
+                { text: '富有美感与品味，注重细节表达', dim: 'creativity' },
+                { text: '目标清晰直接，能高效拿到实际回报', dim: 'business' }
+            ]},
+            { title: '3. 当一项工作取得圆满成功时，你最开心的是：', options: [
+                { text: '作为核心带头人，带领团队实现了目标', dim: 'leadership' },
+                { text: '切实给其他人或特定群体带来了真诚帮助', dim: 'impact' },
+                { text: '打造出了令人惊叹、品质出众的作品', dim: 'creativity' },
+                { text: '创造了可观且清晰可衡量的实际收益', dim: 'business' }
+            ]},
+            { title: '4. 面对突发的繁杂局势，你最习惯的应对方式是：', options: [
+                { text: '梳理各项因素之间的因果与关联逻辑', dim: 'logic' },
+                { text: '换个全新角度思考，寻找意料之外的方案', dim: 'innovation' },
+                { text: '评估可能的风险点，优先做好防范与预案', dim: 'stability' },
+                { text: '倾听各方声音，协调大家迅速达成共识', dim: 'communication' }
+            ]},
+            { title: '5. 在精力充沛的状态下，你更乐意投入到：', options: [
+                { text: '安静沉浸在具体的技术研讨或操作中', dim: 'technical' },
+                { text: '完全根据自己的节奏，自由安排探索', dim: 'autonomy' },
+                { text: '在交流与讨论中碰撞新的想法', dim: 'communication' },
+                { text: '按照既定计划，踏实有条理地稳步推进', dim: 'stability' }
+            ]},
+            { title: '6. 关于未来的个人定位，你更倾向于：', options: [
+                { text: '凭扎实的专业实操建立不可替代性', dim: 'technical' },
+                { text: '主导具有规模与明确收益的业务项目', dim: 'business' },
+                { text: '带领团队共同拿下有挑战性的任务', dim: 'leadership' },
+                { text: '传递有温度的价值，带来正向社会影响', dim: 'impact' }
+            ]},
+            { title: '7. 审查一份作业或方案时，你最先注意到的是：', options: [
+                { text: '排版视觉色彩与整体审美品味', dim: 'creativity' },
+                { text: '推导过程是否严密，逻辑有没有漏洞', dim: 'logic' },
+                { text: '投入与产出对比，看投入是否划算', dim: 'business' },
+                { text: '其中有没有新颖独特、让人眼前一亮的设想', dim: 'innovation' }
+            ]},
+            { title: '8. 面对突如其来的不确定性，你的心态更贴近：', options: [
+                { text: '视其为尝试新模式和新方法的好机会', dim: 'innovation' },
+                { text: '提前准备好兜底预案，优先规避潜在损失', dim: 'stability' },
+                { text: '根据实际情况随遇而安，保持灵活应对', dim: 'autonomy' },
+                { text: '收集新出现的信息，重新计算最优解法', dim: 'logic' }
+            ]},
+            { title: '9. 在身边的同伴眼中，你最突出的优势是：', options: [
+                { text: '善于化解矛盾，沟通起来让人感觉舒服', dim: 'communication' },
+                { text: '关键时刻敢于做决定，且愿意承担责任', dim: 'leadership' },
+                { text: '审美眼光独到，对品质与美感有高要求', dim: 'creativity' },
+                { text: '待人真诚靠谱，乐于耐心辅导和帮助他人', dim: 'impact' }
+            ]},
+            { title: '10. 进入一个新的领域时，你更享受：', options: [
+                { text: '亲自动手操作软件工具，做个具体实践', dim: 'technical' },
+                { text: '研究该领域的运行规律与盈利变现模式', dim: 'business' },
+                { text: '根据兴致随性查阅，不限制固定路线', dim: 'autonomy' },
+                { text: '梳理知识框架，构建系统的底层认知', dim: 'logic' }
+            ]},
+            { title: '11. 规划一项从未做过的事情时，你习惯：', options: [
+                { text: '发散思维，提出几种从未试过的新方案', dim: 'innovation' },
+                { text: '寻找成熟的方法模板，在此基础上稳步推进', dim: 'stability' },
+                { text: '请教有经验的前辈，通过探讨获取建议', dim: 'communication' },
+                { text: '分析相关数据与案例，用客观事实做指导', dim: 'logic' }
+            ]},
+            { title: '12. 最吸引你的团队氛围是：', options: [
+                { text: '极客与工匠氛围，鼓励大家深钻技术', dim: 'technical' },
+                { text: '目标明确，重视实际效益与成果回报', dim: 'business' },
+                { text: '充满人文关怀，注重长远价值与社会意义', dim: 'impact' },
+                { text: '扁平开放，给予每个人充沛的自主空间', dim: 'autonomy' }
+            ]},
+            { title: '13. 当自己的想法受到质疑时，你习惯：', options: [
+                { text: '列出详实的数据与事实，进行客观论证', dim: 'logic' },
+                { text: '倾听对方顾虑，通过友好沟通寻找共识', dim: 'communication' },
+                { text: '用直观好看的成品效果直接进行展示', dim: 'creativity' },
+                { text: '检查设想中是否存在安全或合规风险', dim: 'stability' }
+            ]},
+            { title: '14. 做重大决定时，你优先关注的是：', options: [
+                { text: '团队的目标与愿景是否清晰一致', dim: 'leadership' },
+                { text: '投入的资源能否换来明确且可观的收益', dim: 'business' },
+                { text: '底层结构是否牢固，实操上是否可行', dim: 'technical' },
+                { text: '做这件事能否为他人带来有意义的正向改变', dim: 'impact' }
+            ]},
+            { title: '15. 阅读与获取资讯时，你最容易被吸引的是：', options: [
+                { text: '前沿科技动态与未来的新技术趋势', dim: 'innovation' },
+                { text: '行业发展分析与商业运作模式', dim: 'business' },
+                { text: '视觉设计作品与艺术审美展览', dim: 'creativity' },
+                { text: '心理成长、教育以及社会公益议题', dim: 'impact' }
+            ]},
+            { title: '16. 处理繁杂的日常事务时，你最希望避免：', options: [
+                { text: '过于死板固定的规则管束', dim: 'autonomy' },
+                { text: '缺乏明确的流程标准与秩序', dim: 'stability' },
+                { text: '相互推诿且缺乏真正做主拍板的人', dim: 'leadership' },
+                { text: '机械重复而没有任何新鲜感', dim: 'innovation' }
+            ]},
+            { title: '17. 进行成果展示时，你更擅长：', options: [
+                { text: '富有感染力的口头表达与现场交流', dim: 'communication' },
+                { text: '制作精美且富有视觉冲击力的演示页面', dim: 'creativity' },
+                { text: '演示实际可运行的样例与技术细节', dim: 'technical' },
+                { text: '展现收益模型与可行的商业闭环', dim: 'business' }
+            ]},
+            { title: '18. 你认为一个优秀团队的核心要素是：', options: [
+                { text: '严密的风险把控与质量规范', dim: 'stability' },
+                { text: '有能力的带头人指明清晰方向', dim: 'leadership' },
+                { text: '成员各自具备独当一面的专业手艺', dim: 'technical' },
+                { text: '共同的理想信念与利他初心', dim: 'impact' }
+            ]},
+            { title: '19. 如果获得一笔发展资金，你更想投入到：', options: [
+                { text: '探索未被验证的新想法与新方向', dim: 'innovation' },
+                { text: '扩大业务规模以获取更多实际收益', dim: 'business' },
+                { text: '升级设计质感与视觉美学体验', dim: 'creativity' },
+                { text: '公益项目与人才培养成长', dim: 'impact' }
+            ]},
+            { title: '20. 在多方协作中，你的做事准则是：', options: [
+                { text: '换位思考，建立良好的互信关系', dim: 'communication' },
+                { text: '权责清晰，按照约定好的规则办理', dim: 'stability' },
+                { text: '整合资源，推进整体大局向前发展', dim: 'leadership' },
+                { text: '保持独立，凭最终交付的质量说话', dim: 'autonomy' }
+            ]},
+            { title: '21. 面对海量复杂的信息，你更敏锐于：', options: [
+                { text: '提炼出底层的因果框架与逻辑结构', dim: 'logic' },
+                { text: '识别其中潜在的商业机会与价值', dim: 'business' },
+                { text: '觉察到视觉排版或细节体验上的不足', dim: 'creativity' },
+                { text: '弄懂其背后的实现原理与技术架构', dim: 'technical' }
+            ]},
+            { title: '22. 做出重要方向的决定时，你倾向于：', options: [
+                { text: '列出各项指标进行理性的打分对比', dim: 'logic' },
+                { text: '听取同行或前辈的经验与启发', dim: 'communication' },
+                { text: '选择更具挑战性与新鲜感的路线', dim: 'innovation' },
+                { text: '优先选择确定性高、稳妥安全选项', dim: 'stability' }
+            ]},
+            { title: '23. 补充个人能量与恢复状态时，有效的方式是：', options: [
+                { text: '完全独立掌控时间，不受他人打扰', dim: 'autonomy' },
+                { text: '亲手完成一件精致具体的作品', dim: 'technical' },
+                { text: '看到自己辅导的人取得了明显的进步', dim: 'impact' },
+                { text: '带领小伙伴共同拿下一项艰难的胜利', dim: 'leadership' }
+            ]},
+            { title: '24. 提到“专业认可”，你更期待：', options: [
+                { text: '成为垂直技术领域的专家', dim: 'technical' },
+                { text: '能够统领全局并指引团队方向', dim: 'leadership' },
+                { text: '创作出令人惊叹的美学作品', dim: 'creativity' },
+                { text: '通过帮扶他人带来正向的改变', dim: 'impact' }
+            ]},
+            { title: '25. 你满意的日常作息状态是：', options: [
+                { text: '井然有序，一切按计划可预测', dim: 'stability' },
+                { text: '灵活自由，根据状态自主安排', dim: 'autonomy' },
+                { text: '高频交流，快速推进各项事务', dim: 'communication' },
+                { text: '围绕明确的收益目标高效运转', dim: 'business' }
+            ]},
+            { title: '26. 当既有方案无法解决问题时，你会：', options: [
+                { text: '构思一种全新的构架或解法', dim: 'innovation' },
+                { text: '重新排查底层数据与遗漏变量', dim: 'logic' },
+                { text: '重新调整团队分工与执行步骤', dim: 'leadership' },
+                { text: '暂停高风险操作，排查安全隐患', dim: 'stability' }
+            ]},
+            { title: '27. 面对粗糙的初始雏形，你优先想改善：', options: [
+                { text: '重构视觉样式与交互审美', dim: 'creativity' },
+                { text: '重构底层代码与技术结构', dim: 'technical' },
+                { text: '重新设计变现与定价模式', dim: 'business' },
+                { text: '优化使用体验，提升人文关怀', dim: 'impact' }
+            ]},
+            { title: '28. 对于管理规则的态度，你更认同：', options: [
+                { text: '规则宜精简，多给个人自由空间', dim: 'autonomy' },
+                { text: '流程宜严密，极大减少人为失误', dim: 'stability' },
+                { text: '规则服务于实际效益与产出', dim: 'business' },
+                { text: '规则应体现关心与个人成长', dim: 'impact' }
+            ]},
+            { title: '29. 在讨论交流中，最能触动你的是：', options: [
+                { text: '富有启发的创新概念', dim: 'innovation' },
+                { text: '数据严密推导的分析报告', dim: 'logic' },
+                { text: '极具感染力的现场表达', dim: 'communication' },
+                { text: '高难度的技术展示 Demo', dim: 'technical' }
+            ]},
+            { title: '30. 你更希望被评价为：', options: [
+                { text: '有远见与担当的领袖', dim: 'leadership' },
+                { text: '有独特品味与天赋的创作者', dim: 'creativity' },
+                { text: '对商业机会洞察敏锐的专家', dim: 'business' },
+                { text: '真诚可靠的成长导师', dim: 'impact' }
+            ]},
+            { title: '31. 保持长期专注的动力来自：', options: [
+                { text: '攻克复杂的技术难题', dim: 'technical' },
+                { text: '获得清晰的经济与收益回报', dim: 'business' },
+                { text: '过程井然有序且完全可控', dim: 'stability' },
+                { text: '将美学创意转化为实际作品', dim: 'creativity' }
+            ]},
+            { title: '32. 启动一个新项目时，你第一步做：', options: [
+                { text: '测算成本结构与商业可行性', dim: 'business' },
+                { text: '快速搭建新思路体验原型', dim: 'innovation' },
+                { text: '寻找能力互补的伙伴组建团队', dim: 'communication' },
+                { text: '明确项目能解决什么社会问题', dim: 'impact' }
+            ]},
+            { title: '33. 面对不同意见探讨，你习惯：', options: [
+                { text: '列出事实数据逐条比对利弊', dim: 'logic' },
+                { text: '倾听后拍板定夺并承担责任', dim: 'leadership' },
+                { text: '共情沟通寻找最大公约数', dim: 'communication' },
+                { text: '申请独立负责特定模块', dim: 'autonomy' }
+            ]},
+            { title: '34. 评估最终交付成果时，你的标准是：', options: [
+                { text: '全面测试保障零缺陷零故障', dim: 'stability' },
+                { text: '视觉赏心悦目体现品味细节', dim: 'creativity' },
+                { text: '底层实现优雅且技术门槛高', dim: 'technical' },
+                { text: '能给使用者带来真实帮助', dim: 'impact' }
+            ]},
+            { title: '35. 选择长期发展的领域时，你优先规避：', options: [
+                { text: '过于死板管束的环境', dim: 'autonomy' },
+                { text: '缺乏新意与创新的领域', dim: 'innovation' },
+                { text: '缺乏实际回报的方向', dim: 'business' },
+                { text: '缺乏稳定保障的环境', dim: 'stability' }
+            ]},
+            { title: '36. 在团队协作中，你最擅长提供：', options: [
+                { text: '把控整体方向与持续激励', dim: 'leadership' },
+                { text: '解决实操中的技术难题', dim: 'technical' },
+                { text: '打通部门间沟通瓶颈', dim: 'communication' },
+                { text: '把关对外产出的美学质格', dim: 'creativity' }
+            ]},
+            { title: '37. 哪种成果最能让你感到骄傲：', options: [
+                { text: '成果改善了群体的日常体验', dim: 'impact' },
+                { text: '主导的项目实现了显著收益增长', dim: 'business' },
+                { text: '打造了未曾有过的崭新模式', dim: 'innovation' },
+                { text: '解答了复杂的逻辑难题', dim: 'logic' }
+            ]},
+            { title: '38. 应对突发状况时，你的优势是：', options: [
+                { text: '保持冷静按预案一步步止损', dim: 'stability' },
+                { text: '迅速统筹人员化解危机', dim: 'leadership' },
+                { text: '灵活应变想出替代策略', dim: 'autonomy' },
+                { text: '快速分析数据定位根本原因', dim: 'logic' }
+            ]},
+            { title: '39. 你理想中的“充实一天”是：', options: [
+                { text: '沉浸实操解决了一个技术难点', dim: 'technical' },
+                { text: '创作出了满意的美学作品', dim: 'creativity' },
+                { text: '与伙伴深度交流促成重要合作', dim: 'communication' },
+                { text: '帮助或辅导了他人获得真诚感谢', dim: 'impact' }
+            ]},
+            { title: '40. 职业发展的理想形态更贴近：', options: [
+                { text: '项目制运作，自主掌控地点', dim: 'autonomy' },
+                { text: '在完善体系中稳健积累发展', dim: 'stability' },
+                { text: '作为核心角色开拓新商业版图', dim: 'business' },
+                { text: '在前沿领域探索全新概念', dim: 'innovation' }
+            ]},
+            { title: '41. 审查分析时，你最敏锐看出：', options: [
+                { text: '逻辑前提或数据推导的矛盾', dim: 'logic' },
+                { text: '视觉体验或版式表达不妥', dim: 'creativity' },
+                { text: '节点规划或权责不清的问题', dim: 'leadership' },
+                { text: '底层工程或技术的实现难度', dim: 'technical' }
+            ]},
+            { title: '42. 在人际互动中，你的特点是：', options: [
+                { text: '共情力强，沟通让人舒适', dim: 'communication' },
+                { text: '真诚利他，愿意无私分享经验', dim: 'impact' },
+                { text: '大局观强，关键时刻有掌控力', dim: 'leadership' },
+                { text: '视角新颖，点子丰富', dim: 'innovation' }
+            ]},
+            { title: '43. 学习新知识时，你偏好：', options: [
+                { text: '下载工具上手做个示范项目', dim: 'technical' },
+                { text: '阅读底层书籍推演逻辑体系', dim: 'logic' },
+                { text: '研究案例与商业获利路径', dim: 'business' },
+                { text: '随性涉猎艺术与视觉表现', dim: 'autonomy' }
+            ]},
+            { title: '44. 你希望塑造的工作氛围是：', options: [
+                { text: '严格把关，交付质量万无一失', dim: 'stability' },
+                { text: '追求极致的作品美感与设计', dim: 'creativity' },
+                { text: '彼此关怀，实现共同社会价值', dim: 'impact' },
+                { text: '目标清晰，追求高效商业结果', dim: 'leadership' }
+            ]},
+            { title: '45. 若用一个词总结你的期望：', options: [
+                { text: '开拓探索未知', dim: 'innovation' },
+                { text: '造溢深厚专精', dim: 'technical' },
+                { text: '商业增长高效', dim: 'business' },
+                { text: '带来温暖正向影响', dim: 'impact' }
+            ]},
+            { title: '46. 高压工作后，你偏好的解压方式是：', options: [
+                { text: '独处并支配自由时间', dim: 'autonomy' },
+                { text: '与信赖伙伴交流倾诉', dim: 'communication' },
+                { text: '整理清单恢复秩序感', dim: 'stability' },
+                { text: '沉浸于音乐或设计创作', dim: 'creativity' }
+            ]},
+            { title: '47. 分析商业案例时，你核心关注：', options: [
+                { text: '变现路径与规模化能力', dim: 'business' },
+                { text: '战略抉择与团队组织推进', dim: 'leadership' },
+                { text: '驱动增长的公式与数据模型', dim: 'logic' },
+                { text: '颠覆传统的新颖体验点', dim: 'innovation' }
+            ]},
+            { title: '48. 你理想的指导者类型是：', options: [
+                { text: '实操上能精准点拨的专家', dim: 'technical' },
+                { text: '关注成长与心理关怀的教练', dim: 'impact' },
+                { text: '能指明方向并赋能资源的领袖', dim: 'leadership' },
+                { text: '在品味与创意上带来启发的大师', dim: 'creativity' }
+            ]},
+            { title: '49. 推进常规日常事务时，支撑你的是：', options: [
+                { text: '对承诺与交付质量的敬畏', dim: 'stability' },
+                { text: '完成后换取自由掌控的时间', dim: 'autonomy' },
+                { text: '履行团队中的协作责任', dim: 'communication' },
+                { text: '将杂乱事务梳理清晰的爽快感', dim: 'logic' }
+            ]},
+            { title: '50. 综合来看，你认同的职业成功观是：', options: [
+                { text: '拥有随时选择与掌控节奏的自由', dim: 'autonomy' },
+                { text: '开创下一代产品或新颖模式', dim: 'innovation' },
+                { text: '带领优秀团队达成远大目标', dim: 'leadership' },
+                { text: '在专业领域做到不可替代', dim: 'technical' }
+            ]}
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(QUESTIONS.length).fill(null);
+        let currentNormalizedScores = {};
+        let radarChartInstance = null;
+        let posterRadarChartInstance = null;
+
+        window.onload = function() {
+            renderDimensionsIntro();
+            setupKeyboardListeners();
+        };
+
+        function renderDimensionsIntro() {
+            const container = document.getElementById('dimension-list');
+            if (!container) return;
+            container.innerHTML = DIMENSIONS.map(dim => `
+                <div class="glass-panel rounded-xl p-2.5 flex items-center gap-2.5 border border-indigo-100 shadow-sm hover:border-indigo-300 transition-all">
+                    <div class="w-7 h-7 rounded-lg ${dim.color} flex items-center justify-center shrink-0 border">
+                        <i class="fa-solid ${dim.icon} text-xs"></i>
+                    </div>
+                    <span class="font-bold text-slate-800 text-xs truncate">${dim.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function startTest() {
+            document.getElementById('screen-intro').classList.add('hidden');
+            document.getElementById('screen-quiz').classList.remove('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            currentQuestionIndex = 0;
+            userAnswers = new Array(QUESTIONS.length).fill(null);
+            renderQuestion();
+        }
+
+        function setupKeyboardListeners() {
+            window.addEventListener('keydown', (e) => {
+                const quizScreen = document.getElementById('screen-quiz');
+                if (quizScreen && !quizScreen.classList.contains('hidden')) {
+                    if (['1', '2', '3', '4'].includes(e.key)) {
+                        const optIndex = parseInt(e.key, 10) - 1;
+                        const currentQ = QUESTIONS[currentQuestionIndex];
+                        if (currentQ && currentQ.options[optIndex]) {
+                            selectOption(currentQ.options[optIndex].dim, optIndex);
+                        }
+                    } else if (e.key === 'ArrowLeft') {
+                        prevQuestion();
+                    }
+                }
+            });
+        }
+
+        function renderQuestion() {
+            const q = QUESTIONS[currentQuestionIndex];
+
+            const progressPercent = Math.round(((currentQuestionIndex + 1) / QUESTIONS.length) * 100);
+            document.getElementById('quiz-progress-text').innerText = `第 ${currentQuestionIndex + 1} / ${QUESTIONS.length} 题`;
+            document.getElementById('quiz-progress-percent').innerText = `${progressPercent}%`;
+            document.getElementById('quiz-progress-bar').style.width = `${progressPercent}%`;
+
+            document.getElementById('question-title').innerText = q.title;
+
+            const optionsContainer = document.getElementById('options-container');
+            const labels = ['A', 'B', 'C', 'D'];
+            const badgeTints = [
+                { bg: 'bg-indigo-50', text: 'text-indigo-600', activeBg: 'bg-indigo-600' },
+                { bg: 'bg-blue-50', text: 'text-blue-600', activeBg: 'bg-blue-600' },
+                { bg: 'bg-teal-50', text: 'text-teal-600', activeBg: 'bg-teal-600' },
+                { bg: 'bg-amber-50', text: 'text-amber-600', activeBg: 'bg-amber-600' }
+            ];
+            
+            optionsContainer.innerHTML = q.options.map((opt, idx) => {
+                const isSelected = userAnswers[currentQuestionIndex] === opt.dim;
+                const tint = badgeTints[idx % 4];
+                return `
+                    <div id="option-btn-${idx}" onclick="selectOption('${opt.dim}', ${idx})" 
+                         class="option-card p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
+                            isSelected 
+                            ? 'border-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500/20 shadow-md' 
+                            : 'border-slate-200/90 hover:border-indigo-400 bg-white hover:bg-indigo-50/30'
+                         }">
+                        <div class="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                            isSelected ? `${tint.activeBg} text-white` : `${tint.bg} ${tint.text}`
+                        }">
+                            ${labels[idx]}
+                        </div>
+                        <span class="text-xs sm:text-sm font-semibold ${isSelected ? 'text-indigo-950 font-bold' : 'text-slate-800'} leading-snug flex-1">${opt.text}</span>
+                        ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-600 text-sm"></i>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
+        }
+
+        function selectOption(dim, optIdx) {
+            userAnswers[currentQuestionIndex] = dim;
+
+            const optCard = document.getElementById(`option-btn-${optIdx}`);
+            if (optCard) {
+                optCard.classList.add('scale-[0.985]', 'bg-indigo-100');
+            }
+
+            setTimeout(() => {
+                if (currentQuestionIndex < QUESTIONS.length - 1) {
+                    currentQuestionIndex++;
+                    renderQuestion();
+                } else {
+                    calculateAndShowResult();
+                }
+            }, 180);
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
+        function calculateAndShowResult() {
+            document.getElementById('screen-quiz').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const dimCounts = {};
+            DIMENSIONS.forEach(d => dimCounts[d.id] = 0);
+
+            userAnswers.forEach(chosenDim => {
+                if (chosenDim && dimCounts[chosenDim] !== undefined) {
+                    dimCounts[chosenDim] += 1;
+                }
+            });
+
+            // Score normalization
+            const normalizedScores = {};
+            DIMENSIONS.forEach(d => {
+                const count = dimCounts[d.id] || 0;
+                normalizedScores[d.id] = Math.min(100, Math.max(30, Math.round(30 + count * 14)));
+            });
+
+            currentNormalizedScores = normalizedScores;
+
+            renderRadarChart(normalizedScores);
+            renderResultChart(normalizedScores);
+
+            const matchedTracks = CAREER_TRACKS.map(track => {
+                let totalMatch = 0;
+                let weightSum = 0;
+
+                Object.keys(track.weights).forEach(dimKey => {
+                    const targetWeight = track.weights[dimKey];
+                    const userScore = normalizedScores[dimKey] || 50;
+                    const diff = Math.abs(targetWeight - userScore);
+                    const match = Math.max(0, 100 - diff * 0.65);
+                    totalMatch += match;
+                    weightSum += 1;
+                });
+
+                const finalMatchPercent = Math.min(98, Math.max(68, Math.round(totalMatch / weightSum)));
+                return { ...track, matchScore: finalMatchPercent };
+            });
+
+            matchedTracks.sort((a, b) => b.matchScore - a.matchScore);
+
+            const topTrack = matchedTracks[0];
+            document.getElementById('top-track-title').innerText = topTrack.name;
+            document.getElementById('top-track-match').innerText = `${topTrack.matchScore}%`;
+            document.getElementById('top-track-desc').innerText = topTrack.desc;
+
+            document.getElementById('top-track-tags').innerHTML = topTrack.tags.map(t => 
+                `<span class="text-[10px] font-semibold px-2 py-0.5 bg-brand-50 text-brand-700 rounded border border-brand-200">${t}</span>`
+            ).join('');
+
+            document.getElementById('top-track-jobs').innerHTML = topTrack.jobs.map(j => 
+                `<span class="text-xs px-2.5 py-1 bg-slate-100 text-slate-800 font-medium rounded-lg border border-slate-200/60">${j}</span>`
+            ).join('');
+
+            const secondaryContainer = document.getElementById('secondary-tracks-container');
+            secondaryContainer.innerHTML = matchedTracks.slice(1, 4).map(track => `
+                <div class="glass-panel rounded-2xl p-3.5 shadow-sm border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-900 text-xs sm:text-sm">${track.name}</span>
+                        <span class="text-xs sm:text-sm font-black text-brand-600">${track.matchScore}%</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                        ${track.tags.map(t => `<span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-slate-200/50">${t}</span>`).join('')}
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${track.desc}</p>
+                </div>
+            `).join('');
+
+            setTimeout(() => {
+                document.querySelectorAll('.chart-bar-fill').forEach(bar => {
+                    const target = bar.getAttribute('data-target-width');
+                    if (target) bar.style.width = target;
+                });
+            }, 100);
+        }
+
+        function renderResultChart(scores) {
+            const container = document.getElementById('result-chart-container');
+            container.innerHTML = DIMENSIONS.map(dim => {
+                const score = scores[dim.id];
+                return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span class="text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid ${dim.icon} text-slate-400 text-[11px] w-3.5 text-center"></i>
+                                ${dim.name}
+                            </span>
+                            <span class="text-slate-900 font-bold">${score}</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
+                            <div class="chart-bar-fill bg-brand-600 h-full rounded-full" 
+                                 style="width: 0%" data-target-width="${score}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRadarChart(scores) {
+            const labels = DIMENSIONS.map(d => d.name);
+            const dataValues = DIMENSIONS.map(d => scores[d.id] || 50);
+
+            const canvas = document.getElementById('radarChartCanvas');
+            if (!canvas) return;
+
+            if (radarChartInstance) {
+                radarChartInstance.destroy();
+            }
+
+            radarChartInstance = new Chart(canvas, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '能力偏好得分',
+                        data: dataValues,
+                        backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#4f46e5',
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { display: false, stepSize: 20 },
+                            grid: { color: 'rgba(226, 232, 240, 0.8)' },
+                            angleLines: { color: 'rgba(226, 232, 240, 0.8)' },
+                            pointLabels: {
+                                font: { size: 10, weight: 'bold' },
+                                color: '#334155'
+                            }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function generatePoster() {
+            const modal = document.getElementById('poster-modal');
+            if (!modal) return;
+
+            const topTitle = document.getElementById('top-track-title').innerText;
+            const topMatch = document.getElementById('top-track-match').innerText;
+            const jobsHtml = document.getElementById('top-track-jobs').innerHTML;
+
+            document.getElementById('poster-track-title').innerText = topTitle;
+            document.getElementById('poster-track-match').innerText = `契合度 ${topMatch}`;
+            document.getElementById('poster-jobs').innerHTML = jobsHtml;
+
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                const posterCanvas = document.getElementById('posterRadarCanvas');
+                if (posterCanvas) {
+                    if (posterRadarChartInstance) {
+                        posterRadarChartInstance.destroy();
+                    }
+                    const labels = DIMENSIONS.map(d => d.name);
+                    const scores = currentNormalizedScores || {};
+                    const dataValues = DIMENSIONS.map(d => scores[d.id] || 50);
+
+                    posterRadarChartInstance = new Chart(posterCanvas, {
+                        type: 'radar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: dataValues,
+                                backgroundColor: 'rgba(251, 191, 36, 0.3)',
+                                borderColor: '#fbbf24',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#f59e0b',
+                                pointRadius: 2.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                r: {
+                                    min: 0,
+                                    max: 100,
+                                    ticks: { display: false },
+                                    grid: { color: 'rgba(255, 255, 255, 0.15)' },
+                                    angleLines: { color: 'rgba(255, 255, 255, 0.15)' },
+                                    pointLabels: {
+                                        font: { size: 9, weight: 'bold' },
+                                        color: '#cbd5e1'
+                                    }
+                                }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        function closePosterModal() {
+            const modal = document.getElementById('poster-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function downloadPosterImage() {
+            const printableArea = document.getElementById('poster-printable-area');
+            if (!printableArea) return;
+
+            showToast("正在生成海报图片...");
+
+            html2canvas(printableArea, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `职业路线匹配结果海报.png`;
+                link.href = imgData;
+                link.click();
+                showToast("海报下载已开始！");
+            }).catch(err => {
+                console.error("生成海报失败:", err);
+                showToast("海报生成失败，请稍后重试");
+            });
+        }
+
+        function shareResult() {
+            const topTrackName = document.getElementById('top-track-title')?.innerText || '';
+            const topMatch = document.getElementById('top-track-match')?.innerText || '';
+            
+            const text = `【职业路线匹配评估报告】\n我的首选赛道：${topTrackName}（契合度 ${topMatch}）\n来测测最适合你的职业赛道吧！`;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('已复制结果摘要到剪贴板！');
+            } catch (e) {
+                showToast('复制失败，请手动截图保存');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function resetQuiz() {
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-intro').classList.remove('hidden');
+            currentQuestionIndex = 0;
+            userAnswers = new Array(QUESTIONS.length).fill(null);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            if (toast && toastText) {
+                toastText.innerText = msg;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2500);
+            }
+        }
+    </script>
+</body>
+</html>
